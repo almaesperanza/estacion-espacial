@@ -1,27 +1,29 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación 2: Somos como...</title>
-    <style>
-        body {
+<style>
+        html, body {
             background-color: #04060f;
             color: #f8fafc;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
+            padding: 0;
+            width: 100%;
             min-height: 100vh;
+            /* IMPORTANTE: Permite el scroll vertical en móviles */
             overflow-x: hidden;
-            overflow-y: auto; /* Permite scroll cómodo si la pantalla del celular es muy pequeña */
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Distribuye el espacio verticalmente de forma equilibrada */
-            padding: 15px 0 25px 0;
+            justify-content: flex-start;
+            padding-top: 20px;
+            padding-bottom: 40px; /* Margen amplio para la barra de navegación del celular */
             box-sizing: border-box;
         }
 
-        /* Canvas de estrellas y fondo espacial */
+        /* Canvas de estrellas en el fondo */
         #bgCanvas {
             position: fixed;
             top: 0;
@@ -36,8 +38,9 @@
         .header-station {
             text-align: center;
             z-index: 10;
-            margin-top: 10px;
+            margin-bottom: 10px;
         }
+
         h1 {
             color: #f472b6;
             font-family: cursive;
@@ -46,7 +49,7 @@
             margin: 0;
         }
 
-        /* Área de la escena principal */
+        /* Contenedor principal */
         .stage-container {
             position: relative;
             z-index: 10;
@@ -55,7 +58,6 @@
             align-items: center;
             width: 95%;
             max-width: 600px;
-            margin: 10px 0;
         }
 
         /* --- COHETE HORIZONTAL --- */
@@ -76,7 +78,6 @@
             50% { transform: translateY(-10px) rotate(1deg); }
         }
 
-        /* Cuerpo principal del cohete */
         .rocket-body {
             position: absolute;
             top: 30px;
@@ -92,7 +93,6 @@
             justify-content: center;
         }
 
-        /* Punta del cohete */
         .rocket-nose {
             position: absolute;
             top: 30px;
@@ -105,7 +105,6 @@
             border-left: none;
         }
 
-        /* Ventana/Escotilla RECTANGULAR */
         .rocket-window {
             width: 150px;
             height: 100px;
@@ -127,7 +126,6 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Alerones superior e inferior */
         .fin-top {
             position: absolute;
             top: 2px;
@@ -152,7 +150,6 @@
             border-radius: 0 0 15px 8px;
         }
 
-        /* Fuego y Propulsión trasera */
         .rocket-flame {
             position: absolute;
             top: 60px;
@@ -170,7 +167,7 @@
             100% { transform: scaleX(1.4) translateX(0px); opacity: 1; }
         }
 
-        /* Tarjeta de texto compacto */
+        /* Tarjeta de texto */
         .info-card {
             background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(244, 114, 182, 0.4);
@@ -199,7 +196,7 @@
             font-style: italic;
         }
 
-        /* Controles y Flechas */
+        /* Botones de navegación */
         .controls {
             display: flex;
             justify-content: space-between;
@@ -226,11 +223,11 @@
             transform: scale(1.08);
         }
 
-        /* Botón Siguiente Estación (Posicionado con margen seguro para celulares) */
+        /* Botón Siguiente Estación */
         .next-station {
             z-index: 10;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            margin-top: 25px;
+            margin-bottom: 20px; /* Asegura espacio extra para deslizar */
         }
 
         .btn-next {
@@ -250,135 +247,3 @@
             transform: scale(1.08);
         }
     </style>
-</head>
-<body>
-
-    <canvas id="bgCanvas"></canvas>
-
-    <!-- Encabezado -->
-    <div class="header-station">
-        <h1>✨ Somos como: ✨</h1>
-    </div>
-
-    <div class="stage-container">
-        <!-- COHETE HORIZONTAL CON VENTANA RECTANGULAR -->
-        <div class="rocket-wrapper">
-            <div class="fin-top"></div>
-            <div class="rocket-flame"></div>
-            <div class="rocket-body"></div>
-            <div class="rocket-nose"></div>
-            <div class="rocket-window">
-                <img id="animeImg" src="devilman.jpg" alt="Personajes">
-            </div>
-            <div class="fin-bottom"></div>
-        </div>
-
-        <!-- TARJETA CON TEXTO COMPACTO -->
-        <div class="info-card">
-            <h2 id="animePair">Ryo y Akira</h2>
-            <p id="animeReason">"Porque incluso siendo opuestos, se eligieron en un mundo donde ninguno más podía comprenderlos."</p>
-        </div>
-
-        <!-- BOTONES DE NAVEGACIÓN -->
-        <div class="controls">
-            <button class="nav-btn" onclick="prevSlide()">◀ Anterior</button>
-            <button class="nav-btn" onclick="nextSlide()">Siguiente ▶</button>
-        </div>
-    </div>
-
-    <!-- BOTÓN DE SIGUIENTE ESTACIÓN TOTALMENTE VISIBLE -->
-    <div class="next-station">
-        <button class="btn-next" onclick="location.href='estacion3.html'">Siguiente Estación 🚀</button>
-    </div>
-
-    <script>
-        // --- 1. FONDO DE ESTRELLAS Y PARTÍCULAS ---
-        const bgCanvas = document.getElementById('bgCanvas');
-        const bgCtx = bgCanvas.getContext('2d');
-
-        function resizeBg() {
-            bgCanvas.width = window.innerWidth;
-            bgCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeBg);
-        resizeBg();
-
-        const stars = [];
-        for (let i = 0; i < 110; i++) {
-            stars.push({
-                x: Math.random() * bgCanvas.width,
-                y: Math.random() * bgCanvas.height,
-                size: Math.random() * 2 + 0.5,
-                color: Math.random() > 0.5 ? 'rgba(56, 189, 248, ' : 'rgba(244, 114, 182, ',
-                alpha: Math.random(),
-                speed: Math.random() * 0.02 + 0.005
-            });
-        }
-
-        function animateBg() {
-            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-            stars.forEach(s => {
-                s.alpha += s.speed;
-                if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
-                bgCtx.fillStyle = s.color + s.alpha + ')';
-                bgCtx.beginPath();
-                bgCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-                bgCtx.fill();
-            });
-            requestAnimationFrame(animateBg);
-        }
-        animateBg();
-
-        // --- 2. DATOS DE LOS PERSONAJES ---
-        const slides = [
-            {
-                img: "devilman.jpg",
-                pair: "Ryo y Akira",
-                reason: '"Porque incluso siendo opuestos, se eligieron en un mundo donde ninguno más podía comprenderlos."'
-            },
-            {
-                img: "kazuybaji.jpg",
-                pair: "Kazutora y Baji",
-                reason: '"Porque Kazutora encontró en Baji a alguien que no lo reducía a sus errores, sino que seguía viendo en él al amigo que conocía."'
-            },
-            {
-                img: "gojoygeto.jpg",
-                pair: "Gojo y Geto",
-                reason: '"Porque antes de ser los más fuertes, fueron dos chicos que podían ser débiles mientras estuvieran juntos."'
-            },
-            {
-                img: "fullmetal.jpg",
-                pair: "Edward y Alphonse",
-                reason: '"Porque ni el precio más alto pudo hacer que uno dejara de luchar por devolverle al otro lo que perdió."'
-            }
-        ];
-
-        let currentIndex = 0;
-
-        function updateSlide() {
-            const slide = slides[currentIndex];
-            const imgElement = document.getElementById('animeImg');
-
-            imgElement.style.opacity = 0;
-
-            setTimeout(() => {
-                imgElement.src = slide.img;
-                document.getElementById('animePair').innerText = slide.pair;
-                document.getElementById('animeReason').innerText = slide.reason;
-                imgElement.style.opacity = 1;
-            }, 200);
-        }
-
-        function nextSlide() {
-            currentIndex = (currentIndex + 1) % slides.length;
-            updateSlide();
-        }
-
-        function prevSlide() {
-            currentIndex = (currentIndex - 1 + slides.length) % slides.length;
-            updateSlide();
-        }
-    </script>
-
-</body>
-</html>
