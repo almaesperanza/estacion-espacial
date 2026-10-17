@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estación 4: Cápsula del Tiempo 🌌</title>
+    <!-- Librería jsPDF para generar PDFs desde el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            background-color: #04060f;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Canvas de estrellas de fondo */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Encabezado Espacial */
+        .header-station {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        h1 {
+            color: #38bdf8;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6rem;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
+            margin: 0;
+        }
+        p.subtitle {
+            color: #f472b6;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* BOTÓN DE ABRIR CÁPSULA (PANTALLA INICIAL) */
+        .unlock-box {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            transition: all 0.5s ease;
+            margin-top: 30px;
+        }
+
+        .capsule-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            animation: capsuleFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px #38bdf8);
+        }
+
+        @keyframes capsuleFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(-4deg); }
+        }
+
+        .btn-open-capsule {
+            background: linear-gradient(135deg, #06b6d4, #a855f7);
+            color: #0b0f19;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .btn-open-capsule:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.9);
+        }
+
+        /* CONTENEDOR PRINCIPAL DE LA CÁPSULA */
+        .wishes-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 500px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 2px solid #38bdf8;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+            backdrop-filter: blur(10px);
+            margin-bottom: 80px;
+            display: none;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .wishes-container.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Formulario para agregar deseo */
+        .wish-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            background: rgba(4, 12, 24, 0.8);
+            border: 1px solid #f472b6;
+            border-radius: 12px;
+            color: #a7f3d0;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            padding: 12px;
+            box-sizing: border-box;
+            resize: none;
+            font-size: 0.9rem;
+            outline: none;
+            box-shadow: inset 0 0 10px rgba(244, 114, 182, 0.2);
+        }
+
+        textarea::placeholder {
+            color: rgba(167, 243, 208, 0.5);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #06b6d4, #a855f7);
+            color: #0b0f19;
+            border: none;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-action:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.8);
+        }
+
+        .btn-download {
+            background: transparent;
+            border: 1px dashed #38bdf8;
+            color: #38bdf8;
+            padding: 8px;
+            font-size: 0.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-download:hover {
+            background: rgba(56, 189, 248, 0.15);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        /* NOTA ESPECIAL ESPACIAL */
+        .future-note {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: #38bdf8;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.4;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+        }
+
+        /* Historial de Deseos */
+        .history-title {
+            color: #f472b6;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            border-bottom: 1px dashed rgba(244, 114, 182, 0.4);
+            padding-bottom: 6px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+        }
+
+        .wishes-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 5px;
+        }
+
+        .wish-card {
+            background: rgba(4, 12, 24, 0.6);
+            border-left: 3px solid #22d3ee;
+            padding: 10px 12px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .wish-year {
+            color: #f472b6;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .wish-text {
+            color: #e2e8f0;
+            white-space: pre-line;
+        }
+
+        /* Scrollbar Neón */
+        .wishes-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .wishes-list::-webkit-scrollbar-thumb {
+            background: #f472b6;
+            border-radius: 10px;
+        }
+
+        /* Botón Siguiente Estación */
+        .next-station {
+            position: fixed;
+            bottom: 20px;
+            z-index: 10;
+            display: none;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            color: #0b0f19;
+            border: none;
+            padding: 10px 25px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .btn-next:hover {
+            transform: scale(1.08);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="header-station">
+        <h1>🌌 CÁPSULA DEL TIEMPO 🌌</h1>
+        <p class="subtitle">[ Registro de Deseos Intergalácticos ]</p>
+    </div>
+
+    <!-- BOTÓN INICIAL PARA ABRIR LA CÁPSULA -->
+    <div class="unlock-box" id="unlockBox">
+        <div class="capsule-icon">🛸⏳</div>
+        <button class="btn-open-capsule" onclick="openCapsule()">ABRIR CÁPSULA DEL TIEMPO ✨</button>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL QUE SE REVELA -->
+    <div class="wishes-container" id="wishesContainer">
+        
+        <!-- MENSAJE DE EXPECTATIVA/TRADICIÓN -->
+        <div class="future-note">
+            ✨ <strong>[ AVISO DEL SISTEMA ESPACIAL ]</strong><br>
+            Esta cápsula quedará orbitando en el espacio. El próximo año tu deseo estará aquí esperándote... ¡y podrás guardar muchos más en cada cumpleaños! 🪐💫
+        </div>
+
+        <!-- FORMULARIO -->
+        <div class="wish-form">
+            <textarea id="wishInput" placeholder="Escribe tu deseo de cumpleaños para este año aquí... ✨"></textarea>
+            <button class="btn-action" onclick="saveWish()">✨ Guardar Deseo en la Cápsula ✨</button>
+            <button class="btn-download" onclick="downloadPdfBackup()">📄 Descargar Respaldo en PDF</button>
+        </div>
+
+        <!-- HISTORIAL -->
+        <div class="history-title">>_ DESEOS_GUARDADOS.LOG</div>
+        <div class="wishes-list" id="wishesList">
+            <!-- Se cargan dinámicamente -->
+        </div>
+    </div>
+
+    <div class="next-station" id="nextStationBtn">
+        <button class="btn-next" onclick="location.href='estacion5.html'">Estación Final 🚀</button>
+    </div>
+
+    <script>
+        // --- 1. FONDO DE ESTRELLAS ---
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+
+        function resizeBg() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeBg);
+        resizeBg();
+
+        const stars = [];
+        for (let i = 0; i < 110; i++) {
+            stars.push({
+                x: Math.random() * bgCanvas.width,
+                y: Math.random() * bgCanvas.height,
+                size: Math.random() * 2 + 0.5,
+                color: Math.random() > 0.5 ? 'rgba(56, 189, 248, ' : 'rgba(244, 114, 182, ',
+                alpha: Math.random(),
+                speed: Math.random() * 0.02 + 0.005
+            });
+        }
+
+        function animateBg() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            stars.forEach(s => {
+                s.alpha += s.speed;
+                if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
+                bgCtx.fillStyle = s.color + s.alpha + ')';
+                bgCtx.beginPath();
+                bgCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                bgCtx.fill();
+            });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // --- 2. LÓGICA DE ABRIR CÁPSULA ---
+        function openCapsule() {
+            const unlockBox = document.getElementById('unlockBox');
+            const wishesContainer = document.getElementById('wishesContainer');
+            const nextStationBtn = document.getElementById('nextStationBtn');
+
+            unlockBox.style.opacity = '0';
+            unlockBox.style.transform = 'scale(0.8)';
+
+            setTimeout(() => {
+                unlockBox.style.display = 'none';
+                wishesContainer.classList.add('active');
+                nextStationBtn.style.display = 'block';
+            }, 400);
+        }
+
+        // --- 3. MANEJO DE DESEOS ---
+        const API_KEY = "$2a$10$OcnArItIiUfdvfgpsR.aieCpXbZu8FYJDDLNYjScfPIyY7DzmokjO"; 
+        const BIN_ID = "6ad2d59cac6210605a38d89b ";  
+        const LOCAL_STORAGE_KEY = 'galaxia_deseos_cumpleanos';
+
+        function getWishes() {
+            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function renderWishes() {
+            const wishesList = document.getElementById('wishesList');
+            const wishes = getWishes();
+
+            if (wishes.length === 0) {
+                wishesList.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; text-align: center; font-family: monospace;">Aún no hay deseos en esta cápsula. ¡Escribe el primero!</div>';
+                return;
+            }
+
+            wishesList.innerHTML = '';
+            wishes.slice().reverse().forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'wish-card';
+                card.innerHTML = `
+                    <div class="wish-year">📅 Año ${item.year} - ${item.date}</div>
+                    <div class="wish-text">${escapeHtml(item.text)}</div>
+                `;
+                wishesList.appendChild(card);
+            });
+        }
+
+        function saveWish() {
+            const input = document.getElementById('wishInput');
+            const text = input.value.trim();
+
+            if (!text) {
+                alert('¡Por favor escribe tu deseo antes de guardarlo!');
+                return;
+            }
+
+            const wishes = getWishes();
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const dateStr = now.toLocaleDateString();
+
+            const newWish = {
+                year: currentYear,
+                date: dateStr,
+                text: text
+            };
+
+            wishes.push(newWish);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(wishes));
+
+            if (BIN_ID && API_KEY) {
+                fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify(wishes)
+                }).catch(err => console.log('Error de sincronización nube:', err));
+            }
+
+            input.value = '';
+            renderWishes();
+            
+            // Alerta especial con mensaje motivador
+            alert('✨ ¡Tu deseo ha sido enviado a las estrellas y guardado en la cápsula!\n\n🪐 El próximo año este deseo estará aquí esperándote y podrás guardar uno nuevo.');
+        }
+
+        // --- 4. GENERACIÓN Y DESCARGA EN PDF ---
+        function downloadPdfBackup() {
+            const wishes = getWishes();
+            if (wishes.length === 0) {
+                alert('No hay deseos guardados para exportar aún.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFillColor(11, 15, 25);
+            doc.rect(0, 0, 210, 297, 'F');
+
+            doc.setTextColor(56, 189, 248);
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(18);
+            doc.text("CAPSULA DEL TIEMPO: HISTORIAL DE DESEOS", 15, 25);
+
+            doc.setDrawColor(244, 114, 182);
+            doc.setLineWidth(0.5);
+            doc.line(15, 30, 195, 30);
+
+            let yPosition = 42;
+
+            wishes.forEach((w, index) => {
+                if (yPosition > 260) {
+                    doc.addPage();
+                    doc.setFillColor(11, 15, 25);
+                    doc.rect(0, 0, 210, 297, 'F');
+                    yPosition = 25;
+                }
+
+                doc.setTextColor(244, 114, 182);
+                doc.setFontSize(12);
+                doc.text(`[ANO ${w.year} - ${w.date}]`, 15, yPosition);
+                yPosition += 7;
+
+                doc.setTextColor(226, 232, 240);
+                doc.setFontSize(10);
+                doc.setFont('courier', 'normal');
+
+                const lines = doc.splitTextToSize(w.text, 175);
+                doc.text(lines, 20, yPosition);
+                yPosition += (lines.length * 6) + 10;
+
+                doc.setDrawColor(56, 189, 248);
+                doc.line(15, yPosition - 5, 195, yPosition - 5);
+            });
+
+            doc.save(`deseos_cumpleanos_capsula.pdf`);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        renderWishes();
+    </script>
+
+</body>
+</html>

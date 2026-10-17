@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Feliz Cumpleaños!</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para el GIF de Gojo */
+        .gojo-gif {
+            width: 150px;
+            height: auto;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+            opacity: 0;
+            animation: fadeInText 2s ease forwards 0.5s;
+        }
+        canvas {
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.3));
+        }
+        h1 {
+            font-family: cursive;
+            color: #f472b6;
+            font-size: 2.2rem;
+            margin: 5px 0 15px 0;
+            text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
+            opacity: 0;
+            animation: fadeInText 2s ease forwards 1.5s;
+        }
+       .btn-viaje {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    color: #0b0f19;
+    text-decoration: none;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 25px;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    opacity: 0;
+    animation: fadeInText 2s ease forwards 2.5s;
+}
+.btn-viaje:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
+}
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
+        }
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Aquí va tu GIF de Gojo (asegúrate de tener 'gojo.gif' en la misma carpeta) -->
+        <img src="gojo.gif" alt="Gojo Panzón" class="gojo-gif">
+
+        <!-- Canvas donde se dibuja el pastelito animado -->
+        <canvas id="cakeCanvas" width="300" height="200"></canvas>
+        
+        <h1>Happy Birthday</h1>
+        
+       <a href="estacion1.html" class="btn-viaje">Comenzar el viaje 🚀</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('cakeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let progress = 0;
+
+        function drawCake() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (progress < 1) progress += 0.02;
+
+            ctx.save();
+            ctx.globalAlpha = progress;
+
+            // Plato
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.roundRect(70, 160, 160, 8, 4);
+            ctx.fill();
+
+            // Capa inferior
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.roundRect(85, 115, 130, 45, 6);
+            ctx.fill();
+
+            // Capa superior
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.roundRect(95, 80, 110, 38, 6);
+            ctx.fill();
+
+            // Glaseado
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath();
+            ctx.moveTo(95, 85);
+            ctx.lineTo(205, 85);
+            ctx.lineTo(205, 100);
+            ctx.quadraticCurveTo(190, 120, 175, 100);
+            ctx.quadraticCurveTo(160, 120, 145, 100);
+            ctx.quadraticCurveTo(130, 120, 115, 100);
+            ctx.lineTo(95, 100);
+            ctx.closePath();
+            ctx.fill();
+
+            // Vela
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(142, 42, 16, 38);
+
+            // Rayas de la vela
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(142, 50, 16, 5);
+            ctx.fillRect(142, 63, 16, 5);
+
+            // Flama parpadeante
+            let flicker = Math.sin(Date.now() / 150) * 3;
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(150, 30 + (flicker / 4), 9 + (flicker / 3), 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            requestAnimationFrame(drawCake);
+        }
+
+        drawCake();
+
+    </script>
+
+</body>
+</html>
