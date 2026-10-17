@@ -319,135 +319,214 @@
         <button class="btn-next" onclick="location.href='estacion5.html'">Estación Final 🚀</button>
     </div>
 <script>
-    // --- 1. CREDENCIALES DE LA BASE DE DATOS EN LA NUBE ---
+    // --- 1. FONDO DE ESTRELLAS ---
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+
+    function resizeBg() {
+        bgCanvas.width = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeBg);
+    resizeBg();
+
+    const stars = [];
+    for (let i = 0; i < 110; i++) {
+        stars.push({
+            x: Math.random() * bgCanvas.width,
+            y: Math.random() * bgCanvas.height,
+            size: Math.random() * 2 + 0.5,
+            color: Math.random() > 0.5 ? 'rgba(56, 189, 248, ' : 'rgba(244, 114, 182, ',
+            alpha: Math.random(),
+            speed: Math.random() * 0.02 + 0.005
+        });
+    }
+
+    function animateBg() {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        stars.forEach(s => {
+            s.alpha += s.speed;
+            if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
+            bgCtx.fillStyle = s.color + s.alpha + ')';
+            bgCtx.beginPath();
+            bgCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            bgCtx.fill();
+        });
+        requestAnimationFrame(animateBg);
+    }
+    animateBg();
+
+    // --- 2. LÓGICA DE ABRIR CÁPSULA (INTACTA) ---
+    function openCapsule() {
+        const unlockBox = document.getElementById('unlockBox');
+        const wishesContainer = document.getElementById('wishesContainer');
+        const nextStationBtn = document.getElementById('nextStationBtn');
+
+        unlockBox.style.opacity = '0';
+        unlockBox.style.transform = 'scale(0.8)';
+
+        setTimeout(() => {
+            unlockBox.style.display = 'none';
+            wishesContainer.classList.add('active');
+            nextStationBtn.style.display = 'block';
+        }, 400);
+    }
+
+    // --- 3. MANEJO DE DESEOS Y NUBE ---
     const API_KEY = "$2a$10$OcnArItIiUfdvfgpsR.aieCpXbZu8FYJDDLNYjScfPIyY7DzmokjO"; 
-    const BIN_ID = "6ad2d59cac6210605a38d89b"; 
+    const BIN_ID = "6ad2d59cac6210605a38d89b";  
+    const LOCAL_STORAGE_KEY = 'galaxia_deseos_cumpleanos';
 
-    // --- 2. FUNCIONES DE CONEXIÓN CON JSONBIN.IO ---
+    function getWishes() {
+        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    }
 
-    // Cargar deseos desde la nube
-    async function cargarDeseosDeNube() {
+    function renderWishes() {
+        const wishesList = document.getElementById('wishesList');
+        const wishes = getWishes();
+
+        if (wishes.length === 0) {
+            wishesList.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; text-align: center; font-family: monospace;">Aún no hay deseos en esta cápsula. ¡Escribe el primero!</div>';
+            return;
+        }
+
+        wishesList.innerHTML = '';
+        wishes.slice().reverse().forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'wish-card';
+            card.innerHTML = `
+                <div class="wish-year">📅 Año ${item.year} - ${item.date}</div>
+                <div class="wish-text">${escapeHtml(item.text)}</div>
+            `;
+            wishesList.appendChild(card);
+        });
+    }
+
+    // Sincronizar y descargar de la nube al iniciar
+    async function sincronizarConNube() {
+        if (!BIN_ID || !API_KEY) return;
         try {
             const respuesta = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 method: 'GET',
                 headers: {
                     'X-Master-Key': API_KEY,
-                    'X-Bin-Meta': 'false' // Devuelve directamente el array o contenido sin envoltorios extra
+                    'X-Bin-Meta': 'false'
                 }
             });
-            if (!respuesta.ok) throw new Error("Error al consultar la API");
-            const datos = await respuesta.json();
-            return Array.isArray(datos) ? datos : (datos.record || []);
-        } catch (error) {
-            console.error("Error al cargar de la nube:", error);
-            return [];
+            if (respuesta.ok) {
+                const datosNube = await respuesta.json();
+                const arrayNube = Array.isArray(datosNube) ? datosNube : (datosNube.record || []);
+                if (arrayNube.length > 0) {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(arrayNube));
+                    renderWishes();
+                }
+            }
+        } catch (err) {
+            console.log('Usando datos locales (sin conexión a nube):', err);
         }
     }
 
-    // Guardar nuevo deseo en la nube (Sobrescribe la lista con el nuevo deseo agregado)
-    async function guardarDeseosEnNube(listaActualizada) {
-        try {
-            const respuesta = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    function saveWish() {
+        const input = document.getElementById('wishInput');
+        const text = input.value.trim();
+
+        if (!text) {
+            alert('¡Por favor escribe tu deseo antes de guardarlo!');
+            return;
+        }
+
+        const wishes = getWishes();
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const dateStr = now.toLocaleDateString();
+
+        const newWish = {
+            year: currentYear,
+            date: dateStr,
+            text: text
+        };
+
+        wishes.push(newWish);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(wishes));
+
+        if (BIN_ID && API_KEY) {
+            fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Master-Key': API_KEY
                 },
-                body: JSON.stringify(listaActualizada)
-            });
-            if (!respuesta.ok) throw new Error("Error al guardar en la API");
-            return await respuesta.json();
-        } catch (error) {
-            console.error("Error al guardar en la nube:", error);
+                body: JSON.stringify(wishes)
+            }).catch(err => console.log('Error de sincronización nube:', err));
         }
+
+        input.value = '';
+        renderWishes();
+        
+        alert('✨ ¡Tu deseo ha sido enviado a las estrellas y guardado en la cápsula!\n\n🪐 El próximo año este deseo estará aquí esperándote y podrás guardar uno nuevo.');
     }
 
-    // --- 3. LOGICA DE INTERFAZ Y EVENTOS ---
-
-    const formDeseo = document.getElementById('formDeseo');
-    const inputDeseo = document.getElementById('inputDeseo');
-    const contenedorDeseos = document.getElementById('contenedorDeseos');
-    const btnGuardar = document.getElementById('btnGuardar');
-
-    // Renderizar la lista de deseos en el HTML
-    function mostrarDeseos(deseos) {
-        if (!contenedorDeseos) return;
-        contenedorDeseos.innerHTML = '';
-
-        if (deseos.length === 0) {
-            contenedorDeseos.innerHTML = '<p style="color: #94a3b8; font-style: italic;">No hay deseos en la cápsula aún. ¡Sé el primero en escribir uno! ✨</p>';
+    // --- 4. GENERACIÓN Y DESCARGA EN PDF ---
+    function downloadPdfBackup() {
+        const wishes = getWishes();
+        if (wishes.length === 0) {
+            alert('No hay deseos guardados para exportar aún.');
             return;
         }
 
-        deseos.forEach((item) => {
-            const card = document.createElement('div');
-            card.className = 'deseo-card';
-            card.style.cssText = `
-                background: rgba(15, 23, 42, 0.7);
-                border: 1px solid rgba(56, 189, 248, 0.3);
-                border-radius: 12px;
-                padding: 12px 15px;
-                margin-bottom: 12px;
-                text-align: left;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            `;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-            card.innerHTML = `
-                <div style="font-size: 0.75rem; color: #f472b6; margin-bottom: 4px;">📅 ${item.date || 'Fecha estelar'}</div>
-                <div style="font-size: 0.95rem; color: #f8fafc; line-height: 1.4;">${item.text}</div>
-            `;
-            contenedorDeseos.appendChild(card);
+        doc.setFillColor(11, 15, 25);
+        doc.rect(0, 0, 210, 297, 'F');
+
+        doc.setTextColor(56, 189, 248);
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(18);
+        doc.text("CAPSULA DEL TIEMPO: HISTORIAL DE DESEOS", 15, 25);
+
+        doc.setDrawColor(244, 114, 182);
+        doc.setLineWidth(0.5);
+        doc.line(15, 30, 195, 30);
+
+        let yPosition = 42;
+
+        wishes.forEach((w) => {
+            if (yPosition > 260) {
+                doc.addPage();
+                doc.setFillColor(11, 15, 25);
+                doc.rect(0, 0, 210, 297, 'F');
+                yPosition = 25;
+            }
+
+            doc.setTextColor(244, 114, 182);
+            doc.setFontSize(12);
+            doc.text(`[ANO ${w.year} - ${w.date}]`, 15, yPosition);
+            yPosition += 7;
+
+            doc.setTextColor(226, 232, 240);
+            doc.setFontSize(10);
+            doc.setFont('courier', 'normal');
+
+            const lines = doc.splitTextToSize(w.text, 175);
+            doc.text(lines, 20, yPosition);
+            yPosition += (lines.length * 6) + 10;
+
+            doc.setDrawColor(56, 189, 248);
+            doc.line(15, yPosition - 5, 195, yPosition - 5);
         });
+
+        doc.save(`deseos_cumpleanos_capsula.pdf`);
     }
 
-    // Cargar deseos automáticamente al entrar a la página
-    async function inicializarCapsula() {
-        if (contenedorDeseos) {
-            contenedorDeseos.innerHTML = '<p style="color: #38bdf8;">Sincronizando con la red estelar... 🛰️</p>';
-        }
-        const deseos = await cargarDeseosDeNube();
-        mostrarDeseos(deseos);
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Evento para enviar un nuevo deseo
-    if (formDeseo) {
-        formDeseo.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const texto = inputDeseo.value.trim();
-            if (!texto) return;
-
-            // Deshabilitar botón mientras guarda
-            btnGuardar.disabled = true;
-            btnGuardar.innerText = "Guardando en la nube... 🚀";
-
-            // 1. Obtener los deseos actuales de la nube
-            const deseosActuales = await cargarDeseosDeNube();
-
-            // 2. Crear el objeto del nuevo deseo
-            const hoy = new Date();
-            const nuevoObjeto = {
-                year: hoy.getFullYear(),
-                date: hoy.toLocaleDateString('es-ES'),
-                text: texto
-            };
-
-            // 3. Agregar el nuevo deseo a la lista
-            deseosActuales.push(nuevoObjeto);
-
-            // 4. Guardar la lista actualizada en JSONBin.io
-            await guardarDeseosEnNube(deseosActuales);
-
-            // 5. Limpiar input, restaurar botón y actualizar la pantalla
-            inputDeseo.value = '';
-            btnGuardar.disabled = false;
-            btnGuardar.innerText = "Enviar a la Cápsula 🌌";
-
-            mostrarDeseos(deseosActuales);
-        });
-    }
-
-    // Cargar al iniciar la ventana
-    window.addEventListener('DOMContentLoaded', inicializarCapsula);
+    // Inicializar render local y buscar actualización en la nube
+    renderWishes();
+    sincronizarConNube();
 </script>
 
 </body>
